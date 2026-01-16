@@ -1,7 +1,8 @@
 'use client';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO } from 'date-fns';
+import { formatTimeDetailed } from '@/lib/utils';
 
 interface ActivityChartProps {
   data: Array<{
@@ -14,19 +15,23 @@ interface ActivityChartProps {
 
 export default function ActivityChart({ data }: ActivityChartProps) {
   const chartData = data
-    .map((item) => ({
-      date: item.date,
-      hours: item.total_seconds / 3600, // Convert seconds to hours
-      formattedDate: format(parseISO(item.date), 'MMM dd'),
-      seconds: item.total_seconds,
-    }));
+    .map((item) => {
+      const hours = item.total_seconds / 3600;
+      return {
+        date: item.date,
+        hours: hours,
+        formattedDate: format(parseISO(item.date), 'MMM dd'),
+        seconds: item.total_seconds,
+        formattedTime: formatTimeDetailed(item.total_seconds),
+      };
+    });
   // Data is already sorted chronologically from the API
 
   return (
     <div className="stat-card mt-6">
       <h3 className="text-xl font-semibold mb-4">Activity Over Time</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
+      <ResponsiveContainer width="100%" height={350}>
+        <ComposedChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
           <XAxis 
             dataKey="formattedDate" 
@@ -40,22 +45,37 @@ export default function ActivityChart({ data }: ActivityChartProps) {
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: '8px',
+              padding: '10px',
             }}
-            formatter={(value: number) => [`${value.toFixed(2)} hrs`, 'Time']}
+            formatter={(value: number, name: string, props: any) => {
+              if (name === 'Bar') {
+                return [props.payload.formattedTime, 'Time'];
+              }
+              return [props.payload.formattedTime, 'Time'];
+            }}
             labelFormatter={(label) => `Date: ${label}`}
+          />
+          <Legend />
+          <Bar 
+            dataKey="hours" 
+            fill="#3b82f6" 
+            opacity={0.7}
+            name="Daily Activity"
+            radius={[4, 4, 0, 0]}
           />
           <Line 
             type="monotone" 
             dataKey="hours" 
             stroke="#0ea5e9" 
-            strokeWidth={2}
-            dot={{ fill: '#0ea5e9', r: 4 }}
-            activeDot={{ r: 6 }}
+            strokeWidth={3}
+            dot={{ fill: '#0ea5e9', r: 5 }}
+            activeDot={{ r: 7 }}
+            name="Trend"
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

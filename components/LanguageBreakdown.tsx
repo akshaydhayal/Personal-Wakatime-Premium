@@ -1,6 +1,7 @@
 'use client';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { formatTimeDetailed } from '@/lib/utils';
 
 interface Language {
   name: string;
@@ -22,6 +23,8 @@ export default function LanguageBreakdown({ languages, title = 'Top Languages' }
       name: lang.name,
       hours: lang.total_seconds / 3600,
       percent: lang.percent,
+      total_seconds: lang.total_seconds,
+      formattedTime: formatTimeDetailed(lang.total_seconds),
     }))
     .sort((a, b) => b.hours - a.hours);
 
@@ -55,12 +58,13 @@ export default function LanguageBreakdown({ languages, title = 'Top Languages' }
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: '8px',
+              padding: '10px',
             }}
             formatter={(value: number, name: string, props: any) => [
-              `${value.toFixed(2)} hrs (${props.payload.percent.toFixed(1)}%)`,
+              `${props.payload.formattedTime} (${props.payload.percent.toFixed(1)}%)`,
               'Time',
             ]}
           />

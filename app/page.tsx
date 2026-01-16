@@ -7,6 +7,7 @@ import ActivityChart from '@/components/ActivityChart';
 import LanguageBreakdown from '@/components/LanguageBreakdown';
 import SyncButton from '@/components/SyncButton';
 import { format } from 'date-fns';
+import { formatTimeDetailed } from '@/lib/utils';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -67,10 +68,6 @@ export default function Home() {
     total_minutes: 0,
   };
 
-  const totalHours = Math.floor(stats.total_seconds / 3600);
-  const totalMinutes = Math.floor((stats.total_seconds % 3600) / 60);
-  const avgHoursPerDay = stats.avg_seconds_per_day / 3600;
-
   return (
     <div className="wakatime-container min-h-screen py-8">
       <div className="mb-8">
@@ -99,10 +96,9 @@ export default function Home() {
       {summariesData && summaries.length > 0 && (
         <>
           <StatsCards
-            totalHours={totalHours}
-            totalMinutes={totalMinutes}
+            totalSeconds={stats.total_seconds}
             totalDays={stats.total_days}
-            avgHoursPerDay={avgHoursPerDay}
+            avgSecondsPerDay={stats.avg_seconds_per_day}
           />
 
           <ActivityChart data={summaries} />
@@ -139,7 +135,7 @@ export default function Home() {
                       <td className="py-2 px-4">
                         {format(new Date(summary.date), 'MMM dd, yyyy')}
                       </td>
-                      <td className="py-2 px-4 font-medium">{summary.digital || summary.text}</td>
+                      <td className="py-2 px-4 font-medium">{formatTimeDetailed(summary.total_seconds || 0)}</td>
                       <td className="py-2 px-4">
                         <div className="flex flex-wrap gap-2">
                           {(summary.languages || []).slice(0, 3).map((lang: any, i: number) => (

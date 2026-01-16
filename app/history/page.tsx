@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { format, parseISO } from 'date-fns';
 import LanguageBreakdown from '@/components/LanguageBreakdown';
+import { formatTimeDetailed } from '@/lib/utils';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -74,12 +75,12 @@ export default function HistoryPage() {
                           {format(parseISO(summary.date), 'EEEE, MMMM dd, yyyy')}
                         </div>
                         <div className="text-sm text-gray-500 mt-1">
-                          {summary.digital || summary.text}
+                          {formatTimeDetailed(summary.total_seconds || 0)}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                          {summary.hours}h {Math.floor((summary.total_seconds % 3600) / 60)}m
+                          {formatTimeDetailed(summary.total_seconds || 0)}
                         </div>
                       </div>
                     </div>
@@ -98,10 +99,10 @@ export default function HistoryPage() {
                 
                 <div className="mb-6">
                   <div className="text-3xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-                    {selectedSummary.digital || selectedSummary.text}
+                    {formatTimeDetailed(selectedSummary.total_seconds || 0)}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {selectedSummary.total_seconds} seconds total
+                    {selectedSummary.total_seconds || 0} seconds total
                   </div>
                 </div>
 
@@ -113,7 +114,7 @@ export default function HistoryPage() {
                         <div key={i} className="flex justify-between items-center">
                           <span className="text-sm">{lang.name}</span>
                           <span className="text-sm font-medium">
-                            {lang.digital} ({lang.percent.toFixed(1)}%)
+                            {formatTimeDetailed(lang.total_seconds || 0)} ({lang.percent.toFixed(1)}%)
                           </span>
                         </div>
                       ))}
@@ -129,7 +130,7 @@ export default function HistoryPage() {
                         <div key={i} className="flex justify-between items-center">
                           <span className="text-sm">{proj.name}</span>
                           <span className="text-sm font-medium">
-                            {proj.digital} ({proj.percent.toFixed(1)}%)
+                            {formatTimeDetailed(proj.total_seconds || 0)} ({proj.percent.toFixed(1)}%)
                           </span>
                         </div>
                       ))}
@@ -145,7 +146,7 @@ export default function HistoryPage() {
                         <div key={i} className="flex justify-between items-center">
                           <span className="text-sm">{editor.name}</span>
                           <span className="text-sm font-medium">
-                            {editor.digital} ({editor.percent.toFixed(1)}%)
+                            {formatTimeDetailed(editor.total_seconds || 0)} ({editor.percent.toFixed(1)}%)
                           </span>
                         </div>
                       ))}
