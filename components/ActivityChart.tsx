@@ -16,11 +16,11 @@ export default function ActivityChart({ data }: ActivityChartProps) {
   const chartData = data
     .map((item) => ({
       date: item.date,
-      hours: item.hours + item.total_seconds / 3600,
+      hours: item.total_seconds / 3600, // Convert seconds to hours
       formattedDate: format(parseISO(item.date), 'MMM dd'),
       seconds: item.total_seconds,
-    }))
-    .reverse(); // Show oldest to newest
+    }));
+  // Data is already sorted chronologically from the API
 
   return (
     <div className="stat-card mt-6">
