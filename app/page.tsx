@@ -5,8 +5,6 @@ import useSWR from 'swr';
 import StatsCards from '@/components/StatsCards';
 import ActivityChart from '@/components/ActivityChart';
 import LanguageBreakdown from '@/components/LanguageBreakdown';
-import SyncButton from '@/components/SyncButton';
-import AddHistoricalDataButton from '@/components/AddHistoricalDataButton';
 import IntervalSelector from '@/components/IntervalSelector';
 import { format } from 'date-fns';
 import { formatTimeDetailed } from '@/lib/utils';
@@ -22,18 +20,28 @@ export default function Home() {
   const { data: statsData, error: statsError } = useSWR('/api/stats', fetcher);
 
   const [allLanguages, setAllLanguages] = useState<Array<{ name: string; total_seconds: number; percent: number }>>([]);
+  const [allProjects, setAllProjects] = useState<Array<{ name: string; total_seconds: number; percent: number }>>([]);
 
   useEffect(() => {
     if (summariesData?.data) {
       // Aggregate all languages from selected interval
       const langMap = new Map<string, number>();
+      const projectMap = new Map<string, number>();
       let totalSeconds = 0;
 
       summariesData.data.forEach((summary: any) => {
         totalSeconds += summary.total_seconds || 0;
+        
+        // Aggregate languages
         (summary.languages || []).forEach((lang: any) => {
           const current = langMap.get(lang.name) || 0;
           langMap.set(lang.name, current + lang.total_seconds);
+        });
+
+        // Aggregate projects
+        (summary.projects || []).forEach((proj: any) => {
+          const current = projectMap.get(proj.name) || 0;
+          projectMap.set(proj.name, current + proj.total_seconds);
         });
       });
 
@@ -45,7 +53,16 @@ export default function Home() {
         }))
         .sort((a, b) => b.total_seconds - a.total_seconds);
 
+      const projects = Array.from(projectMap.entries())
+        .map(([name, seconds]) => ({
+          name,
+          total_seconds: seconds,
+          percent: totalSeconds > 0 ? (seconds / totalSeconds) * 100 : 0,
+        }))
+        .sort((a, b) => b.total_seconds - a.total_seconds);
+
       setAllLanguages(languages);
+      setAllProjects(projects);
     }
   }, [summariesData]);
 
@@ -80,14 +97,7 @@ export default function Home() {
   const intervalAvgSeconds = intervalDays > 0 ? intervalTotalSeconds / intervalDays : 0;
 
   return (
-    <div className="wakatime-container min-h-screen py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">WakaTime Premium</h1>
-        <p className="text-gray-500">Your coding activity tracker</p>
-      </div>
-
-      <SyncButton />
-      <AddHistoricalDataButton />
+    <div className="wakatime-container min-h-screen py-6">
 
       {!summariesData && !summariesError && (
         <div className="text-center py-12">
@@ -107,11 +117,13 @@ export default function Home() {
 
       {summariesData && summaries.length > 0 && (
         <>
-          <StatsCards
-            totalSeconds={stats.total_seconds}
-            totalDays={stats.total_days}
-            avgSecondsPerDay={stats.avg_seconds_per_day}
-          />
+          <div className="mb-6">
+            <StatsCards
+              totalSeconds={stats.total_seconds}
+              totalDays={stats.total_days}
+              avgSecondsPerDay={stats.avg_seconds_per_day}
+            />
+          </div>
 
           <div>
             <IntervalSelector
@@ -132,14 +144,10 @@ export default function Home() {
               title={`Top Languages (${selectedInterval === '7days' ? 'Last 7 Days' : selectedInterval === '14days' ? 'Last 14 Days' : selectedInterval === '1month' ? 'Last Month' : 'All Time'})`}
             />
             
-            {statsData?.top_projects && statsData.top_projects.length > 0 && (
+            {allProjects.length > 0 && (
               <LanguageBreakdown
-                languages={statsData.top_projects.map((p: any) => ({
-                  name: p.name,
-                  total_seconds: p.total_seconds,
-                  percent: p.percent,
-                }))}
-                title="Top Projects"
+                languages={allProjects}
+                title={`Top Projects (${selectedInterval === '7days' ? 'Last 7 Days' : selectedInterval === '14days' ? 'Last 14 Days' : selectedInterval === '1month' ? 'Last Month' : 'All Time'})`}
               />
             )}
           </div>

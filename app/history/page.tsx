@@ -9,7 +9,7 @@ import { formatTimeDetailed } from '@/lib/utils';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function HistoryPage() {
-  const { data, error } = useSWR('/api/summaries?limit=100', fetcher);
+  const { data, error } = useSWR('/api/summaries?interval=alltime&limit=10000', fetcher);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSummary, setSelectedSummary] = useState<any>(null);
 
@@ -31,7 +31,10 @@ export default function HistoryPage() {
     );
   }
 
-  const summaries = data?.data || [];
+  // Sort summaries by date descending (latest first)
+  const summaries = (data?.data || []).slice().sort((a: any, b: any) => {
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 
   return (
     <div className="wakatime-container min-h-screen py-8">
@@ -57,8 +60,8 @@ export default function HistoryPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <div className="stat-card">
-              <h2 className="text-2xl font-semibold mb-4">All Days</h2>
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              <h2 className="text-2xl font-semibold mb-4">All Days ({summaries.length} total)</h2>
+              <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto">
                 {summaries.map((summary: any, index: number) => (
                   <div
                     key={index}
