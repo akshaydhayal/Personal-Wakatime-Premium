@@ -6,6 +6,7 @@ import StatsCards from '@/components/StatsCards';
 import ActivityChart from '@/components/ActivityChart';
 import LanguageBreakdown from '@/components/LanguageBreakdown';
 import SyncButton from '@/components/SyncButton';
+import AddHistoricalDataButton from '@/components/AddHistoricalDataButton';
 import IntervalSelector from '@/components/IntervalSelector';
 import { format } from 'date-fns';
 import { formatTimeDetailed } from '@/lib/utils';
@@ -81,6 +82,7 @@ export default function Home() {
       </div>
 
       <SyncButton />
+      <AddHistoricalDataButton />
 
       {!summariesData && !summariesError && (
         <div className="text-center py-12">
