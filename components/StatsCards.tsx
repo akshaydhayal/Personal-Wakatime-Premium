@@ -1,6 +1,6 @@
 'use client';
 
-import { formatTimeDetailed } from '@/lib/utils';
+import { formatTimeHoursMinutes } from '@/lib/utils';
 
 interface StatsCardsProps {
   totalSeconds: number;
@@ -12,7 +12,7 @@ export default function StatsCards({ totalSeconds, totalDays, avgSecondsPerDay }
   const stats = [
     {
       label: 'Total Time',
-      value: formatTimeDetailed(totalSeconds),
+      value: formatTimeHoursMinutes(totalSeconds),
       description: 'All time tracked',
     },
     {
@@ -22,7 +22,7 @@ export default function StatsCards({ totalSeconds, totalDays, avgSecondsPerDay }
     },
     {
       label: 'Daily Average',
-      value: formatTimeDetailed(avgSecondsPerDay),
+      value: formatTimeHoursMinutes(avgSecondsPerDay),
       description: 'Average per day',
     },
     {

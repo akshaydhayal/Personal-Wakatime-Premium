@@ -2,7 +2,7 @@
 
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO } from 'date-fns';
-import { formatTimeDetailed } from '@/lib/utils';
+import { formatTimeDetailed, formatTimeHoursMinutes } from '@/lib/utils';
 
 interface ActivityChartProps {
   data: Array<{
@@ -12,9 +12,11 @@ interface ActivityChartProps {
     hours: number;
   }>;
   interval?: string;
+  totalSeconds?: number;
+  averageSeconds?: number;
 }
 
-export default function ActivityChart({ data, interval = '7days' }: ActivityChartProps) {
+export default function ActivityChart({ data, interval = '7days', totalSeconds, averageSeconds }: ActivityChartProps) {
   const getDateFormat = (dateStr: string) => {
     const date = parseISO(dateStr);
     if (interval === 'alltime' || interval === '1month') {
@@ -41,9 +43,46 @@ export default function ActivityChart({ data, interval = '7days' }: ActivityChar
 
   const chartHeight = interval === 'alltime' || interval === '1month' ? 400 : 350;
 
+  // Calculate totals if not provided
+  const calculatedTotalSeconds = totalSeconds !== undefined 
+    ? totalSeconds 
+    : data.reduce((sum, item) => sum + (item.total_seconds || 0), 0);
+  
+  const calculatedAvgSeconds = averageSeconds !== undefined
+    ? averageSeconds
+    : data.length > 0 ? calculatedTotalSeconds / data.length : 0;
+
+  // Count days with activity (non-zero)
+  const daysWithActivity = data.filter(item => (item.total_seconds || 0) > 0).length;
+  const avgSecondsPerActiveDay = daysWithActivity > 0 ? calculatedTotalSeconds / daysWithActivity : 0;
+
   return (
     <div className="stat-card mt-6">
-      <h3 className="text-xl font-semibold mb-4">Activity Over Time</h3>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
+        <h3 className="text-xl font-semibold">Activity Over Time</h3>
+        <div className="flex flex-wrap gap-4 md:gap-6 text-sm">
+          <div className="text-right">
+            <div className="text-gray-500 dark:text-gray-400 text-xs">Total Time</div>
+            <div className="text-base md:text-lg font-bold text-primary-600 dark:text-primary-400">
+              {formatTimeHoursMinutes(calculatedTotalSeconds)}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-gray-500 dark:text-gray-400 text-xs">Daily Average</div>
+            <div className="text-base md:text-lg font-bold text-primary-600 dark:text-primary-400">
+              {formatTimeHoursMinutes(calculatedAvgSeconds)}
+            </div>
+          </div>
+          {daysWithActivity < data.length && daysWithActivity > 0 && (
+            <div className="text-right">
+              <div className="text-gray-500 dark:text-gray-400 text-xs">Avg (Active Days)</div>
+              <div className="text-base md:text-lg font-bold text-primary-600 dark:text-primary-400">
+                {formatTimeHoursMinutes(avgSecondsPerActiveDay)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={chartHeight}>
         <ComposedChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />

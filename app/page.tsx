@@ -74,6 +74,11 @@ export default function Home() {
     total_minutes: 0,
   };
 
+  // Calculate totals and averages for the selected interval
+  const intervalTotalSeconds = summaries.reduce((sum: number, s: any) => sum + (s.total_seconds || 0), 0);
+  const intervalDays = summaries.length;
+  const intervalAvgSeconds = intervalDays > 0 ? intervalTotalSeconds / intervalDays : 0;
+
   return (
     <div className="wakatime-container min-h-screen py-8">
       <div className="mb-8">
@@ -113,7 +118,12 @@ export default function Home() {
               selectedInterval={selectedInterval}
               onIntervalChange={setSelectedInterval}
             />
-            <ActivityChart data={summaries} interval={selectedInterval} />
+            <ActivityChart 
+              data={summaries} 
+              interval={selectedInterval}
+              totalSeconds={intervalTotalSeconds}
+              averageSeconds={intervalAvgSeconds}
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
