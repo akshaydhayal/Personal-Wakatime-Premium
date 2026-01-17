@@ -7,24 +7,44 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get('limit') || '30');
-    const last7Days = searchParams.get('last7') === 'true';
+    const limit = parseInt(searchParams.get('limit') || '1000');
+    const interval = searchParams.get('interval') || '7days'; // 7days, 14days, 1month, alltime
 
     let query: any = {};
+    let dateStrings: string[] = [];
+    let fillMissingDays = false;
 
-    if (last7Days) {
-      // Get last 7 days including today (today + 6 days ago = 7 days total)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set to start of day
-      
-      const dateStrings = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (interval === '7days') {
+      // Get last 7 days including today
+      fillMissingDays = true;
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
         dateStrings.push(date.toISOString().split('T')[0]);
       }
-      
       query.date = { $in: dateStrings };
+    } else if (interval === '14days') {
+      // Get last 14 days including today
+      fillMissingDays = true;
+      for (let i = 13; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        dateStrings.push(date.toISOString().split('T')[0]);
+      }
+      query.date = { $in: dateStrings };
+    } else if (interval === '1month') {
+      // Get last 30 days including today
+      fillMissingDays = false; // Too many days to fill, just show what we have
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 29);
+      query.date = { $gte: thirtyDaysAgo.toISOString().split('T')[0] };
+    } else if (interval === 'alltime') {
+      // Get all data
+      fillMissingDays = false;
+      query = {}; // No date filter
     }
 
     let summaries = await Summary.find(query)
@@ -32,23 +52,16 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean();
 
-    // If last7Days, ensure we have entries for all 7 days (fill missing days with 0)
-    if (last7Days) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const all7Days = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
+    // Fill missing days for short intervals
+    if (fillMissingDays && dateStrings.length > 0) {
+      const filledSummaries = [];
+      for (const dateStr of dateStrings) {
         const existing = summaries.find((s: any) => s.date === dateStr);
         if (existing) {
-          all7Days.push(existing);
+          filledSummaries.push(existing);
         } else {
           // Fill missing days with zero data
-          all7Days.push({
+          filledSummaries.push({
             date: dateStr,
             total_seconds: 0,
             digital: '0:00',
@@ -63,7 +76,7 @@ export async function GET(request: NextRequest) {
           });
         }
       }
-      summaries = all7Days;
+      summaries = filledSummaries;
     }
 
     // Calculate totals

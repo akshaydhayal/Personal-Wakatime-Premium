@@ -6,20 +6,25 @@ import StatsCards from '@/components/StatsCards';
 import ActivityChart from '@/components/ActivityChart';
 import LanguageBreakdown from '@/components/LanguageBreakdown';
 import SyncButton from '@/components/SyncButton';
+import IntervalSelector from '@/components/IntervalSelector';
 import { format } from 'date-fns';
 import { formatTimeDetailed } from '@/lib/utils';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Home() {
-  const { data: summariesData, error: summariesError, mutate: mutateSummaries } = useSWR('/api/summaries?last7=true', fetcher);
+  const [selectedInterval, setSelectedInterval] = useState<string>('7days');
+  const { data: summariesData, error: summariesError, mutate: mutateSummaries } = useSWR(
+    `/api/summaries?interval=${selectedInterval}`,
+    fetcher
+  );
   const { data: statsData, error: statsError } = useSWR('/api/stats', fetcher);
 
   const [allLanguages, setAllLanguages] = useState<Array<{ name: string; total_seconds: number; percent: number }>>([]);
 
   useEffect(() => {
     if (summariesData?.data) {
-      // Aggregate all languages from last 7 days
+      // Aggregate all languages from selected interval
       const langMap = new Map<string, number>();
       let totalSeconds = 0;
 
@@ -101,10 +106,19 @@ export default function Home() {
             avgSecondsPerDay={stats.avg_seconds_per_day}
           />
 
-          <ActivityChart data={summaries} />
+          <div>
+            <IntervalSelector
+              selectedInterval={selectedInterval}
+              onIntervalChange={setSelectedInterval}
+            />
+            <ActivityChart data={summaries} interval={selectedInterval} />
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <LanguageBreakdown languages={allLanguages} title="Top Languages (Last 7 Days)" />
+            <LanguageBreakdown
+              languages={allLanguages}
+              title={`Top Languages (${selectedInterval === '7days' ? 'Last 7 Days' : selectedInterval === '14days' ? 'Last 14 Days' : selectedInterval === '1month' ? 'Last Month' : 'All Time'})`}
+            />
             
             {statsData?.top_projects && statsData.top_projects.length > 0 && (
               <LanguageBreakdown
@@ -119,7 +133,12 @@ export default function Home() {
           </div>
 
           <div className="stat-card mt-6">
-            <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
+            <h3 className="text-xl font-semibold mb-4">
+              {selectedInterval === '7days' ? 'Last 7 Days' : 
+               selectedInterval === '14days' ? 'Last 14 Days' : 
+               selectedInterval === '1month' ? 'Last Month' : 
+               'All Activity'}
+            </h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -130,7 +149,12 @@ export default function Home() {
                   </tr>
                 </thead>
                 <tbody>
-                  {summaries.slice(0, 7).map((summary: any, index: number) => (
+                  {summaries
+                    .slice()
+                    .reverse()
+                    .filter((s: any) => s.total_seconds > 0) // Only show days with activity
+                    .slice(0, selectedInterval === 'alltime' ? 50 : selectedInterval === '1month' ? 30 : summaries.length)
+                    .map((summary: any, index: number) => (
                     <tr key={index} className="border-b border-gray-100 dark:border-gray-800">
                       <td className="py-2 px-4">
                         {format(new Date(summary.date), 'MMM dd, yyyy')}
