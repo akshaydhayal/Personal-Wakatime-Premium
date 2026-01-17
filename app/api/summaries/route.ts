@@ -47,14 +47,14 @@ export async function GET(request: NextRequest) {
       query = {}; // No date filter
     }
 
-    let summaries = await Summary.find(query)
+    let summaries: any[] = await Summary.find(query)
       .sort({ date: 1 }) // Sort ascending for chronological order
       .limit(limit)
       .lean();
 
     // Fill missing days for short intervals
     if (fillMissingDays && dateStrings.length > 0) {
-      const filledSummaries = [];
+      const filledSummaries: any[] = [];
       for (const dateStr of dateStrings) {
         const existing = summaries.find((s: any) => s.date === dateStr);
         if (existing) {
