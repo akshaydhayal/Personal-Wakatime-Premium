@@ -46,7 +46,6 @@ const SummarySchema = new Schema<ISummary>(
       type: String,
       required: true,
       unique: true,
-      index: true,
     },
     total_seconds: {
       type: Number,
@@ -123,4 +122,24 @@ const SummarySchema = new Schema<ISummary>(
   }
 );
 
-export default mongoose.models.Summary || mongoose.model<ISummary>('Summary', SummarySchema);
+// Create unique index on date
+SummarySchema.index({ date: 1 }, { unique: true });
+
+/**
+ * Get the Summary model for a specific user
+ * Each user has their own collection
+ */
+export function getSummaryModel(userId: string) {
+  const collectionName = userId.toLowerCase(); // akshay, monika, himanshu
+  
+  // Check if model already exists
+  if (mongoose.models[collectionName]) {
+    return mongoose.models[collectionName];
+  }
+  
+  // Create new model with collection name = userId
+  return mongoose.model<ISummary>(collectionName, SummarySchema, collectionName);
+}
+
+// Default export for backward compatibility (uses 'akshay' collection)
+export default getSummaryModel('akshay');

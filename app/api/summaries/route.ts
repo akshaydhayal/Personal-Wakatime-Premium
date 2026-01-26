@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import Summary from '@/models/Summary';
+import { getSummaryModel } from '@/lib/getSummaryModel';
+import { Model } from 'mongoose';
+import { ISummary } from '@/lib/getSummaryModel';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,42 +11,50 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '1000');
     const interval = searchParams.get('interval') || '7days'; // 7days, 14days, 1month, alltime
+    const userId = searchParams.get('user') || 'akshay'; // Default to 'akshay' for backward compatibility
+
+    // Get the Summary model for this user's collection
+    const Summary = getSummaryModel(userId) as Model<ISummary>;
 
     let query: any = {};
     let dateStrings: string[] = [];
     let fillMissingDays = false;
 
+    // Get today's date in local timezone (YYYY-MM-DD format)
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     if (interval === '7days') {
       // Get last 7 days including today
       fillMissingDays = true;
       for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        dateStrings.push(date.toISOString().split('T')[0]);
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        dateStrings.push(dateStr);
       }
       query.date = { $in: dateStrings };
     } else if (interval === '14days') {
       // Get last 14 days including today
       fillMissingDays = true;
       for (let i = 13; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        dateStrings.push(date.toISOString().split('T')[0]);
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        dateStrings.push(dateStr);
       }
       query.date = { $in: dateStrings };
     } else if (interval === '1month') {
       // Get last 30 days including today
       fillMissingDays = false; // Too many days to fill, just show what we have
-      const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setDate(today.getDate() - 29);
-      query.date = { $gte: thirtyDaysAgo.toISOString().split('T')[0] };
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+      const thirtyDaysAgoStr = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
+      query.date = { $gte: thirtyDaysAgoStr };
     } else if (interval === 'alltime') {
-      // Get all data
+      // Get all data for this user
       fillMissingDays = false;
-      query = {}; // No date filter
+      query = {}; // No filter - get all data from this user's collection
     }
 
     let summaries: any[] = await Summary.find(query)

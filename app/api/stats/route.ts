@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import Summary from '@/models/Summary';
+import { getSummaryModel } from '@/lib/getSummaryModel';
+import { Model } from 'mongoose';
+import { ISummary } from '@/lib/getSummaryModel';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    // Get all summaries
-    const summaries = await Summary.find({}).lean();
+    // Get user from query params (default to 'akshay')
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get('user') || 'akshay';
+
+    // Get the Summary model for this user's collection
+    const Summary = getSummaryModel(userId) as Model<ISummary>;
+
+    // Get all summaries for this user from their collection
+    const summaries = await Summary.find({}).lean() as any[];
 
     // Calculate aggregate stats
     const totalSeconds = summaries.reduce((sum, s) => sum + (s.total_seconds || 0), 0);

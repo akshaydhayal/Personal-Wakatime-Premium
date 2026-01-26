@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
+import { usePathname } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import LanguageBreakdown from '@/components/LanguageBreakdown';
 import { formatTimeDetailed } from '@/lib/utils';
@@ -9,7 +10,10 @@ import { formatTimeDetailed } from '@/lib/utils';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function HistoryPage() {
-  const { data, error } = useSWR('/api/summaries?interval=alltime&limit=10000', fetcher);
+  // Get user from URL path or default to 'akshay'
+  const pathname = usePathname();
+  const userId = pathname.includes('/me') ? 'akshay' : pathname.includes('/monika') ? 'monika' : pathname.includes('/himanshu') ? 'himanshu' : 'akshay';
+  const { data, error } = useSWR(`/api/summaries?interval=alltime&limit=10000&user=${userId}`, fetcher);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSummary, setSelectedSummary] = useState<any>(null);
 
@@ -37,10 +41,10 @@ export default function HistoryPage() {
   });
 
   return (
-    <div className="wakatime-container min-h-screen py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Activity History</h1>
-        <p className="text-gray-500">View all your tracked coding activity</p>
+    <div className="wakatime-container min-h-screen py-4 sm:py-8">
+      <div className="mb-4 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">Activity History</h1>
+        <p className="text-sm sm:text-base text-gray-500">View all your tracked coding activity</p>
       </div>
 
       {!data && !error && (
@@ -57,32 +61,32 @@ export default function HistoryPage() {
       )}
 
       {data && summaries.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2">
             <div className="stat-card">
-              <h2 className="text-2xl font-semibold mb-4">All Days ({summaries.length} total)</h2>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4">All Days ({summaries.length} total)</h2>
               <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto">
                 {summaries.map((summary: any, index: number) => (
                   <div
                     key={index}
                     onClick={() => setSelectedDate(summary.date)}
-                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                    className={`p-3 sm:p-4 rounded-lg border cursor-pointer transition-colors ${
                       selectedDate === summary.date
                         ? 'bg-primary-50 dark:bg-primary-900 border-primary-500'
                         : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary-300'
                     }`}
                   >
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium text-sm sm:text-base">
                           {format(parseISO(summary.date), 'EEEE, MMMM dd, yyyy')}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-xs sm:text-sm text-gray-500 mt-1">
                           {formatTimeDetailed(summary.total_seconds || 0)}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                      <div className="text-left sm:text-right">
+                        <div className="text-base sm:text-lg font-bold text-primary-600 dark:text-primary-400">
                           {formatTimeDetailed(summary.total_seconds || 0)}
                         </div>
                       </div>
@@ -96,22 +100,22 @@ export default function HistoryPage() {
           <div className="lg:col-span-1">
             {selectedSummary ? (
               <div className="stat-card sticky top-4">
-                <h2 className="text-2xl font-semibold mb-4">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4">
                   {format(parseISO(selectedSummary.date), 'MMM dd, yyyy')}
                 </h2>
                 
-                <div className="mb-6">
-                  <div className="text-3xl font-bold text-primary-600 dark:text-primary-400 mb-2">
+                <div className="mb-4 sm:mb-6">
+                  <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-400 mb-2">
                     {formatTimeDetailed(selectedSummary.total_seconds || 0)}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-xs sm:text-sm text-gray-500">
                     {selectedSummary.total_seconds || 0} seconds total
                   </div>
                 </div>
 
                 {selectedSummary.languages && selectedSummary.languages.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="font-semibold mb-3">Languages</h3>
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Languages</h3>
                     <div className="space-y-2">
                       {selectedSummary.languages.slice(0, 5).map((lang: any, i: number) => (
                         <div key={i} className="flex justify-between items-center">

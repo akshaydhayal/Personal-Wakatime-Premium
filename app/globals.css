@@ -36,15 +36,39 @@ body {
 .wakatime-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 12px;
+}
+
+@media (min-width: 640px) {
+  .wakatime-container {
+    padding: 0 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .wakatime-container {
+    padding: 0 20px;
+  }
 }
 
 .stat-card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
-  padding: 20px;
+  padding: 12px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (min-width: 640px) {
+  .stat-card {
+    padding: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .stat-card {
+    padding: 20px;
+  }
 }
 
 @media (prefers-color-scheme: light) {

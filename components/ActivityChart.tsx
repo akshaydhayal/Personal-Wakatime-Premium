@@ -58,9 +58,9 @@ export default function ActivityChart({ data, interval = '7days', totalSeconds, 
 
   return (
     <div className="stat-card mt-6">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
-        <h3 className="text-xl font-semibold">Activity Over Time</h3>
-        <div className="flex flex-wrap gap-4 md:gap-6 text-sm">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-3 sm:gap-4">
+        <h3 className="text-lg sm:text-xl font-semibold">Activity Over Time</h3>
+        <div className="flex flex-wrap gap-2 sm:gap-4 md:gap-6 text-xs sm:text-sm">
           <div className="text-right">
             <div className="text-gray-500 dark:text-gray-400 text-xs">Total Time</div>
             <div className="text-base md:text-lg font-bold text-primary-600 dark:text-primary-400">

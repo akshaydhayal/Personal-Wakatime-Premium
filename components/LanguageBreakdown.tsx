@@ -53,8 +53,8 @@ export default function LanguageBreakdown({ languages, title = 'Top Languages' }
             type="category"
             dataKey="name"
             tick={{ fill: 'currentColor' }}
-            style={{ fontSize: '12px' }}
-            width={100}
+            style={{ fontSize: '11px' }}
+            width={80}
           />
           <Tooltip
             contentStyle={{
