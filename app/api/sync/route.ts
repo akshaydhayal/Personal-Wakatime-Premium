@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { getSummaryModel } from '@/lib/getSummaryModel';
-import { fetchLast7Days, fetchDateRange } from '@/lib/wakatime';
+import { fetchLast7Days } from '@/lib/wakatime';
 import { Model } from 'mongoose';
 import { ISummary } from '@/lib/getSummaryModel';
 
@@ -16,20 +16,11 @@ export async function POST(request: NextRequest) {
     // Get the Summary model for this user's collection
     const Summary = getSummaryModel(userId) as Model<ISummary>;
 
-    // For monika and himanshu, fetch data from Jan 20, 2026 onwards
-    // For akshay, fetch last 7 days (as before)
-    let summaries;
-    if (userId === 'monika' || userId === 'himanshu') {
-      const startDate = '2026-01-20';
-      const today = new Date().toISOString().split('T')[0];
-      summaries = await fetchDateRange(startDate, today, userId);
-    } else {
-      // For akshay, fetch last 7 days
-      summaries = await fetchLast7Days(userId);
-    }
+    // For all users, fetch last 7 days (free tier limitation - custom date ranges require premium)
+    const summaries = await fetchLast7Days(userId);
 
     // Store each day's summary in MongoDB
-    const operations = summaries.map((summary) => {
+    const operations = summaries.map((summary: any) => {
       const date = summary.range.date;
       const grandTotal = summary.grand_total;
 
@@ -93,20 +84,11 @@ export async function GET(request: NextRequest) {
     // Get the Summary model for this user's collection
     const Summary = getSummaryModel(userId) as Model<ISummary>;
 
-    // For monika and himanshu, fetch data from Jan 20, 2026 onwards
-    // For akshay, fetch last 7 days (as before)
-    let summaries;
-    if (userId === 'monika' || userId === 'himanshu') {
-      const startDate = '2026-01-20';
-      const today = new Date().toISOString().split('T')[0];
-      summaries = await fetchDateRange(startDate, today, userId);
-    } else {
-      // For akshay, fetch last 7 days
-      summaries = await fetchLast7Days(userId);
-    }
+    // For all users, fetch last 7 days (free tier limitation - custom date ranges require premium)
+    const summaries = await fetchLast7Days(userId);
 
     // Store each day's summary in MongoDB
-    const operations = summaries.map((summary) => {
+    const operations = summaries.map((summary: any) => {
       const date = summary.range.date;
       const grandTotal = summary.grand_total;
 

@@ -15,13 +15,35 @@ export async function GET(request: NextRequest) {
     // Get the Summary model for this user's collection
     const Summary = getSummaryModel(userId) as Model<ISummary>;
 
-    // Get all summaries for this user from their collection
-    const summaries = await Summary.find({}).lean() as any[];
+    // Get all summaries for this user from their collection, sorted by date
+    const summaries = await Summary.find({}).sort({ date: 1 }).lean() as any[];
 
     // Calculate aggregate stats
     const totalSeconds = summaries.reduce((sum, s) => sum + (s.total_seconds || 0), 0);
     const totalDays = summaries.length;
-    const avgSecondsPerDay = totalDays > 0 ? totalSeconds / totalDays : 0;
+    
+    // Calculate daily average from first entry date to today
+    // If no data exists, default to 0
+    let avgSecondsPerDay = 0;
+    let daysSinceFirstEntry = 0;
+    
+    if (summaries.length > 0) {
+      // Get first entry date
+      const firstEntryDate = summaries[0].date;
+      const firstDate = new Date(firstEntryDate);
+      
+      // Get today's date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      firstDate.setHours(0, 0, 0, 0);
+      
+      // Calculate days from first entry to today (inclusive)
+      const diffTime = today.getTime() - firstDate.getTime();
+      daysSinceFirstEntry = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end day
+      
+      // Calculate average based on days from first entry to today
+      avgSecondsPerDay = daysSinceFirstEntry > 0 ? totalSeconds / daysSinceFirstEntry : 0;
+    }
 
     // Aggregate languages
     const languageMap = new Map<string, number>();
@@ -83,6 +105,7 @@ export async function GET(request: NextRequest) {
         total_seconds: totalSeconds,
         total_days: totalDays,
         avg_seconds_per_day: avgSecondsPerDay,
+        days_since_first_entry: daysSinceFirstEntry,
         total_hours: Math.floor(totalSeconds / 3600),
         total_minutes: Math.floor((totalSeconds % 3600) / 60),
       },
