@@ -4,12 +4,16 @@ import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import StatsCards from '@/components/StatsCards';
 import ActivityChart from '@/components/ActivityChart';
+import WeeklyAverageChart from '@/components/WeeklyAverageChart';
 import LanguageBreakdown from '@/components/LanguageBreakdown';
 import IntervalSelector from '@/components/IntervalSelector';
 import { format } from 'date-fns';
 import { formatTimeDetailed } from '@/lib/utils';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Tracking start date for Akshay - used as the global reference for all charts
+const TRACKING_START_DATE = '2026-01-01';
 
 export default function MeDashboard() {
   const [selectedInterval, setSelectedInterval] = useState<string>('7days');
@@ -18,6 +22,8 @@ export default function MeDashboard() {
     fetcher
   );
   const { data: statsData, error: statsError } = useSWR('/api/stats?user=akshay', fetcher);
+  // Fetch all-time data for the weekly average chart
+  const { data: allTimeData } = useSWR('/api/summaries?interval=alltime&user=akshay', fetcher);
 
   const [allLanguages, setAllLanguages] = useState<Array<{ name: string; total_seconds: number; percent: number }>>([]);
   const [allProjects, setAllProjects] = useState<Array<{ name: string; total_seconds: number; percent: number }>>([]);
@@ -137,6 +143,14 @@ export default function MeDashboard() {
               averageSeconds={intervalAvgSeconds}
             />
           </div>
+
+          {/* Weekly Average Chart - uses all-time data, weeks counted from tracking start */}
+          {allTimeData?.data && allTimeData.data.length > 0 && (
+            <WeeklyAverageChart
+              data={allTimeData.data}
+              startDate={TRACKING_START_DATE}
+            />
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <LanguageBreakdown
