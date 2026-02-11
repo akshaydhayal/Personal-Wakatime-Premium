@@ -1,0 +1,23 @@
+Given what you already have (daily activity chart, weekly averages, cumulative average, language/project breakdowns).
+
+here are the 3 most impactful features for truly understanding your coding behavior:
+1. 🟩 Contribution Heatmap Calendar (like GitHub's green squares)
+A full year calendar view where each day is a colored square — darker = more coding time, lighter = less, gray = no activity.
+Why it's essential: At a single glance you see your entire year's consistency — streaks, gaps, weekends vs weekdays, vacation periods, burnout phases. No other chart gives this bird's-eye perspective. It also shows your current streak and longest streak of consecutive active days.
+This is the #1 most-requested feature in every time-tracking tool for a reason.
+
+2. 📊 Day-of-Week Pattern Analysis
+A bar chart showing your average coding time per weekday (Monday through Sunday), calculated across all tracked data.
+Why it's essential: It reveals your weekly rhythm — things like "I code 8 hours on Tuesdays but only 4 on Fridays" or "I barely code on weekends." This is behavioral insight you can't see from daily or weekly charts. It answers: When in the week am I most/least productive? and helps you plan your schedule around your natural patterns.
+
+3. 🎯 Daily Goal Hit Rate
+Set a daily target (e.g., 6 hours) and track:
+A line chart showing your hit rate % over time (e.g., "what % of days in each week did I meet my goal")
+Simple stats: total days hit, total days missed, overall hit rate %
+Why it's essential: Total time and averages can be misleading — a 7-hour average could mean "7 hours every day" or "14 hours some days, 0 on others." The hit rate measures discipline and consistency, not just volume. Watching your hit rate trend upward is far more motivating than watching raw hours.
+
+Summary
+Feature	What it reveals
+Heatmap Calendar	Year-at-a-glance consistency, streaks, gaps
+Day-of-Week Pattern	Your weekly rhythm and behavioral patterns
+Goal Hit Rate	Discipline — are you consistently hitting your target?
