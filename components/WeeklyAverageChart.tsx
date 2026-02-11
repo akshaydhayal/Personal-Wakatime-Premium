@@ -5,8 +5,8 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts';
-import { format, parseISO, addDays, min } from 'date-fns';
-import { formatTimeHoursMinutes, formatTimeDetailed } from '@/lib/utils';
+import { format, parseISO, addDays, min, getDaysInMonth } from 'date-fns';
+import { formatTimeHoursMinutes } from '@/lib/utils';
 
 interface WeeklyAverageChartProps {
   data: Array<{
@@ -26,6 +26,18 @@ interface WeekData {
   formattedAvg: string;
 }
 
+interface MonthData {
+  monthLabel: string;
+  monthKey: string;
+  avgSeconds: number;
+  avgHours: number;
+  totalSeconds: number;
+  daysTracked: number;
+  daysInMonth: number;
+  formattedAvg: string;
+  formattedTotal: string;
+}
+
 interface CumulativePoint {
   date: string;
   formattedDate: string;
@@ -37,7 +49,7 @@ interface CumulativePoint {
   formattedDaily: string;
 }
 
-type TabType = 'weekly' | 'cumulative';
+type TabType = 'weekly' | 'monthly' | 'cumulative';
 
 export default function WeeklyAverageChart({ data, startDate }: WeeklyAverageChartProps) {
   const [activeTab, setActiveTab] = useState<TabType>('weekly');
@@ -99,6 +111,54 @@ export default function WeeklyAverageChart({ data, startDate }: WeeklyAverageCha
       : 0;
   const overallWeeklyAvgHours = overallWeeklyAvgSeconds / 3600;
 
+  // ========== MONTHLY AVERAGE DATA ==========
+  const monthMap = new Map<string, { totalSeconds: number; daysTracked: number; year: number; month: number }>();
+
+  data.forEach((item) => {
+    const date = parseISO(item.date);
+    const monthKey = format(date, 'yyyy-MM'); // e.g. "2026-01"
+    
+    if (!monthMap.has(monthKey)) {
+      monthMap.set(monthKey, {
+        totalSeconds: 0,
+        daysTracked: 0,
+        year: date.getFullYear(),
+        month: date.getMonth(), // 0-indexed
+      });
+    }
+
+    const monthEntry = monthMap.get(monthKey)!;
+    monthEntry.totalSeconds += item.total_seconds || 0;
+    monthEntry.daysTracked += 1;
+  });
+
+  const months: MonthData[] = Array.from(monthMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([monthKey, entry]) => {
+      const daysInMonth = getDaysInMonth(new Date(entry.year, entry.month));
+      const avgSeconds = entry.daysTracked > 0 ? entry.totalSeconds / entry.daysTracked : 0;
+
+      return {
+        monthLabel: format(new Date(entry.year, entry.month), 'MMM yyyy'),
+        monthKey,
+        avgSeconds,
+        avgHours: avgSeconds / 3600,
+        totalSeconds: entry.totalSeconds,
+        daysTracked: entry.daysTracked,
+        daysInMonth,
+        formattedAvg: formatTimeHoursMinutes(avgSeconds),
+        formattedTotal: formatTimeHoursMinutes(entry.totalSeconds),
+      };
+    });
+
+  // Monthly stats
+  const monthsWithData = months.filter((m) => m.daysTracked > 0);
+  const overallMonthlyAvgSeconds =
+    monthsWithData.length > 0
+      ? monthsWithData.reduce((sum, m) => sum + m.avgSeconds, 0) / monthsWithData.length
+      : 0;
+  const overallMonthlyAvgHours = overallMonthlyAvgSeconds / 3600;
+
   // ========== CUMULATIVE AVERAGE DATA ==========
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
   const cumulativeData: CumulativePoint[] = [];
@@ -123,15 +183,23 @@ export default function WeeklyAverageChart({ data, startDate }: WeeklyAverageCha
   });
 
   const showWeekly = weeks.length >= 2;
+  const showMonthly = months.length >= 1;
   const showCumulative = cumulativeData.length >= 2;
 
-  if (!showWeekly && !showCumulative) return null;
+  if (!showWeekly && !showMonthly && !showCumulative) return null;
 
-  // Color bars for weekly chart
-  const getBarColor = (avgHours: number) => {
+  // Color bars for weekly/monthly charts
+  const getWeeklyBarColor = (avgHours: number) => {
     if (avgHours === 0) return '#e2e8f0';
     if (avgHours >= overallWeeklyAvgHours * 1.1) return '#22c55e';
     if (avgHours >= overallWeeklyAvgHours * 0.9) return '#3b82f6';
+    return '#94a3b8';
+  };
+
+  const getMonthlyBarColor = (avgHours: number) => {
+    if (avgHours === 0) return '#e2e8f0';
+    if (avgHours >= overallMonthlyAvgHours * 1.1) return '#22c55e';
+    if (avgHours >= overallMonthlyAvgHours * 0.9) return '#3b82f6';
     return '#94a3b8';
   };
 
@@ -156,7 +224,19 @@ export default function WeeklyAverageChart({ data, startDate }: WeeklyAverageCha
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                Weekly Average
+                Weekly Avg
+              </button>
+            )}
+            {showMonthly && (
+              <button
+                onClick={() => setActiveTab('monthly')}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'monthly'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Monthly Avg
               </button>
             )}
             {showCumulative && (
@@ -168,14 +248,14 @@ export default function WeeklyAverageChart({ data, startDate }: WeeklyAverageCha
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                Cumulative Average
+                Cumulative Avg
               </button>
             )}
           </div>
 
           {/* Stats for active tab */}
           <div className="flex flex-wrap gap-2 sm:gap-4 md:gap-6 text-xs sm:text-sm">
-            {activeTab === 'weekly' ? (
+            {activeTab === 'weekly' && (
               <>
                 <div className="text-right">
                   <div className="text-gray-500 dark:text-gray-400 text-xs">Weeks Tracked</div>
@@ -190,7 +270,24 @@ export default function WeeklyAverageChart({ data, startDate }: WeeklyAverageCha
                   </div>
                 </div>
               </>
-            ) : (
+            )}
+            {activeTab === 'monthly' && (
+              <>
+                <div className="text-right">
+                  <div className="text-gray-500 dark:text-gray-400 text-xs">Months Tracked</div>
+                  <div className="text-base md:text-lg font-bold text-gray-900 dark:text-white">
+                    {months.length}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-gray-500 dark:text-gray-400 text-xs">Overall Monthly Avg</div>
+                  <div className="text-base md:text-lg font-bold text-primary-600 dark:text-primary-400">
+                    {formatTimeHoursMinutes(overallMonthlyAvgSeconds)}
+                  </div>
+                </div>
+              </>
+            )}
+            {activeTab === 'cumulative' && (
               <>
                 <div className="text-right">
                   <div className="text-gray-500 dark:text-gray-400 text-xs">Days Tracked</div>
@@ -265,14 +362,14 @@ export default function WeeklyAverageChart({ data, startDate }: WeeklyAverageCha
                 maxBarSize={60}
               >
                 {weeks.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={getBarColor(entry.avgHours)} />
+                  <Cell key={`cell-${index}`} fill={getWeeklyBarColor(entry.avgHours)} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
 
           {/* Color legend */}
-          <div className="flex justify-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-1.5">
               <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#22c55e' }}></span>
               Above avg
@@ -290,6 +387,118 @@ export default function WeeklyAverageChart({ data, startDate }: WeeklyAverageCha
               Overall avg line
             </div>
           </div>
+        </>
+      )}
+
+      {/* Monthly Average Chart */}
+      {activeTab === 'monthly' && showMonthly && (
+        <>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={months} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis
+                dataKey="monthLabel"
+                tick={{ fill: 'currentColor', fontSize: 12 }}
+                interval={0}
+              />
+              <YAxis
+                tick={{ fill: 'currentColor' }}
+                style={{ fontSize: '12px' }}
+                label={{ value: 'Avg Hours/Day', angle: -90, position: 'insideLeft', style: { fontSize: '11px' } }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  fontSize: '13px',
+                }}
+                formatter={(value: number, name: string, props: any) => {
+                  const payload = props.payload as MonthData;
+                  return [
+                    `${payload.formattedAvg} (${payload.daysTracked}/${payload.daysInMonth} days)`,
+                    'Daily Avg',
+                  ];
+                }}
+                labelFormatter={(label) => `${label}`}
+              />
+              {monthsWithData.length > 1 && (
+                <ReferenceLine
+                  y={overallMonthlyAvgHours}
+                  stroke="#f59e0b"
+                  strokeDasharray="6 4"
+                  strokeWidth={2}
+                  label={{
+                    value: 'Overall Avg',
+                    position: 'right',
+                    fill: '#f59e0b',
+                    fontSize: 11,
+                  }}
+                />
+              )}
+              <Bar
+                dataKey="avgHours"
+                name="Monthly Avg"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={80}
+              >
+                {months.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getMonthlyBarColor(entry.avgHours)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* Monthly details table */}
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-2 px-2 sm:px-3">Month</th>
+                  <th className="text-right py-2 px-2 sm:px-3">Days Tracked</th>
+                  <th className="text-right py-2 px-2 sm:px-3">Total Time</th>
+                  <th className="text-right py-2 px-2 sm:px-3">Daily Avg</th>
+                </tr>
+              </thead>
+              <tbody>
+                {months.map((month) => (
+                  <tr key={month.monthKey} className="border-b border-gray-100 dark:border-gray-800">
+                    <td className="py-2 px-2 sm:px-3 font-medium">{month.monthLabel}</td>
+                    <td className="py-2 px-2 sm:px-3 text-right text-gray-500 dark:text-gray-400">
+                      {month.daysTracked}/{month.daysInMonth}
+                    </td>
+                    <td className="py-2 px-2 sm:px-3 text-right">{month.formattedTotal}</td>
+                    <td className="py-2 px-2 sm:px-3 text-right font-medium text-primary-600 dark:text-primary-400">
+                      {month.formattedAvg}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Color legend */}
+          {monthsWithData.length > 1 && (
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#22c55e' }}></span>
+                Above avg
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#3b82f6' }}></span>
+                Near avg
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#94a3b8' }}></span>
+                Below avg
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm border" style={{ borderColor: '#f59e0b', backgroundColor: 'transparent' }}></span>
+                Overall avg line
+              </div>
+            </div>
+          )}
         </>
       )}
 

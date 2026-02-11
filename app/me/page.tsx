@@ -155,13 +155,13 @@ export default function MeDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <LanguageBreakdown
               languages={allLanguages}
-              title={`Top Languages (${selectedInterval === '7days' ? 'Last 7 Days' : selectedInterval === '14days' ? 'Last 14 Days' : selectedInterval === '1month' ? 'Last Month' : 'All Time'})`}
+              title={`Top Languages (${selectedInterval === '7days' ? 'Last 7 Days' : selectedInterval === '14days' ? 'Last 14 Days' : selectedInterval === '1month' ? 'Last 30 Days' : 'All Time'})`}
             />
             
             {allProjects.length > 0 && (
               <LanguageBreakdown
                 languages={allProjects}
-                title={`Top Projects (${selectedInterval === '7days' ? 'Last 7 Days' : selectedInterval === '14days' ? 'Last 14 Days' : selectedInterval === '1month' ? 'Last Month' : 'All Time'})`}
+                title={`Top Projects (${selectedInterval === '7days' ? 'Last 7 Days' : selectedInterval === '14days' ? 'Last 14 Days' : selectedInterval === '1month' ? 'Last 30 Days' : 'All Time'})`}
               />
             )}
           </div>
@@ -170,7 +170,7 @@ export default function MeDashboard() {
             <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
               {selectedInterval === '7days' ? 'Last 7 Days' : 
                selectedInterval === '14days' ? 'Last 14 Days' : 
-               selectedInterval === '1month' ? 'Last Month' : 
+               selectedInterval === '1month' ? 'Last 30 Days' : 
                'All Activity'}
             </h3>
             <div className="overflow-x-auto">

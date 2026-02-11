@@ -8,7 +8,7 @@ interface IntervalSelectorProps {
 const intervals = [
   { value: '7days', label: 'Last 7 Days' },
   { value: '14days', label: 'Last 14 Days' },
-  { value: '1month', label: 'Last Month' },
+  { value: '1month', label: 'Last 30 Days' },
   { value: 'alltime', label: 'All Time' },
 ];
 
